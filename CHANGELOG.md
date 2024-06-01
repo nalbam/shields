@@ -4,6 +4,20 @@ Note: this changelog is for the shields.io server. The changelog for the badge-m
 
 ---
 
+## server-2024-06-01
+
+- migrate service tests to GH actions [#8421](https://github.com/badges/shields/issues/8421)
+- remove danger-plugin-no-test-shortcuts [#8815](https://github.com/badges/shields/issues/8815)
+- Add various [Polymart] badges [#8811](https://github.com/badges/shields/issues/8811)
+- update [githubpipenv] tests/examples [#8797](https://github.com/badges/shields/issues/8797)
+- fix service test loader on windows, add tests [#8786](https://github.com/badges/shields/issues/8786)
+- Add docstrings for pipenv helpers [#8787](https://github.com/badges/shields/issues/8787)
+- migrate danger CI job to GHA [#8477](https://github.com/badges/shields/issues/8477)
+- deprecate [apm] service [#8773](https://github.com/badges/shields/issues/8773)
+- Docstrings for php-version service [#8766](https://github.com/badges/shields/issues/8766)
+- deprecate lgtm; lgtm service tests should be passing [#8771](https://github.com/badges/shields/issues/8771)
+- Dependency updates
+
 ## server-2023-01-01
 
 - Breaking change: Routes for GitHub workflows badge have changed. See https://github.com/badges/shields/issues/8671 for more details
