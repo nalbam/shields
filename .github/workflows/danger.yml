@@ -1,7 +1,7 @@
 name: Danger
 on:
   pull_request_target:
-    types: [opened, edited, reopened, synchronize]
+    types: [opened, reopened, synchronize]
 
 permissions:
   checks: write
@@ -11,15 +11,15 @@ permissions:
 jobs:
   danger:
     runs-on: ubuntu-latest
-    if: github.actor != 'dependabot[bot]'
+    if: github.actor != 'dependabot[bot]' && github.actor != 'repo-ranger[bot]'
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup
         uses: ./.github/actions/setup
         with:
-          node-version: 16
+          node-version: 20
 
       - name: Danger
         run: npm run danger ci
