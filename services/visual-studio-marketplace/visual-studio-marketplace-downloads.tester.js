@@ -63,7 +63,7 @@ t.create('installs')
   .intercept(nock =>
     nock('https://marketplace.visualstudio.com/_apis/public/gallery/')
       .post('/extensionquery/')
-      .reply(200, mockResponse)
+      .reply(200, mockResponse),
   )
   .expectBadge({
     label: 'installs',
@@ -93,7 +93,36 @@ t.create('zero installs')
             ],
           },
         ],
-      })
+      }),
+  )
+  .expectBadge({
+    label: 'installs',
+    message: '0',
+    color: 'red',
+  })
+
+t.create('missing statistics array')
+  .get('/visual-studio-marketplace/i/swellaby.rust-pack.json')
+  .intercept(nock =>
+    nock('https://marketplace.visualstudio.com/_apis/public/gallery/')
+      .post('/extensionquery/')
+      .reply(200, {
+        results: [
+          {
+            extensions: [
+              {
+                versions: [
+                  {
+                    version: '1.0.0',
+                  },
+                ],
+                releaseDate: '2019-04-13T07:50:27.000Z',
+                lastUpdated: '2019-04-13T07:50:27.000Z',
+              },
+            ],
+          },
+        ],
+      }),
   )
   .expectBadge({
     label: 'installs',
@@ -106,7 +135,7 @@ t.create('downloads')
   .intercept(nock =>
     nock('https://marketplace.visualstudio.com/_apis/public/gallery/')
       .post('/extensionquery/')
-      .reply(200, mockResponse)
+      .reply(200, mockResponse),
   )
   .expectBadge({
     label: 'downloads',
