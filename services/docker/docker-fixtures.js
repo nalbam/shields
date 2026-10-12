@@ -32,62 +32,7 @@ const sizeDataNoTagSemVerSort = [
     ],
   },
 ]
-const versionDataNoTagDateSort = {
-  count: 4,
-  results: [
-    {
-      name: 'latest',
-      images: [
-        {
-          digest:
-            'sha256:6bdb610acd12a4446d6dd839ebf8c2927c8e6bbde8b7beb2562d1f7f7c4437fb',
-          architecture: 'arm64',
-        },
-        {
-          digest:
-            'sha256:4070dd02827ed3545acb745de3b567a42b87828bb842181e80a2b69f6e3b37b2',
-          architecture: 'amd64',
-        },
-        {
-          digest:
-            'sha256:6f21523ebe450faa23e688b7ea3556ddf4415032263a80ad1f1543463098a779',
-          architecture: 'arm',
-        },
-      ],
-    },
-    {
-      name: 'arm64v8-latest',
-      images: [
-        {
-          digest:
-            'sha256:6bdb610acd12a4446d6dd839ebf8c2927c8e6bbde8b7beb2562d1f7f7c4437fb',
-          architecture: 'amd64',
-        },
-      ],
-    },
-    {
-      name: 'arm32v7-latest',
-      images: [
-        {
-          digest:
-            'sha256:6f21523ebe450faa23e688b7ea3556ddf4415032263a80ad1f1543463098a779',
-          architecture: 'amd64',
-        },
-      ],
-    },
-    {
-      name: 'amd64-latest',
-      images: [
-        {
-          digest:
-            'sha256:4070dd02827ed3545acb745de3b567a42b87828bb842181e80a2b69f6e3b37b2',
-          architecture: 'amd64',
-        },
-      ],
-    },
-  ],
-}
-const versionPagedDataNoTagDateSort = [
+const versionDataNoTagDateSort = [
   {
     name: 'latest',
     images: [
@@ -2998,11 +2943,54 @@ const versionDataWithVaryingArchitectures = [
   { name: '2.6', images: [] },
 ]
 
+const versionDataWithArchSpecificVersions = [
+  {
+    name: '3.8-arm64',
+    images: [
+      {
+        digest:
+          'sha256:3d62c3ceeba113f72efaaf3a35d83081963fa2cd29be76ed1aaa87b59f6f8eae',
+        architecture: 'arm64',
+      },
+    ],
+  },
+  {
+    name: '3.8-amd64',
+    images: [
+      {
+        digest:
+          'sha256:661bdba24d94ee8f1e4002eb3a87d7062244dd2583fb294471e9e00a7bfba45d',
+        architecture: 'amd64',
+      },
+    ],
+  },
+  {
+    name: '3.9-arm64',
+    images: [
+      {
+        digest:
+          'sha256:1c1d100e50a7684afcbdc82929de1bc79bee8adcaafd367c38e5aa7eed4d6e19',
+        architecture: 'arm64',
+      },
+    ],
+  },
+  {
+    name: '3.9-amd64',
+    images: [
+      {
+        digest:
+          'sha256:faf4f034c82d40b66a7285a5e9d305f543a2726961cc6da11206770ef013244e',
+        architecture: 'amd64',
+      },
+    ],
+  },
+]
+
 export {
   sizeDataNoTagSemVerSort,
   versionDataNoTagDateSort,
-  versionPagedDataNoTagDateSort,
   versionDataNoTagSemVerSort,
   versionDataWithTag,
   versionDataWithVaryingArchitectures,
+  versionDataWithArchSpecificVersions,
 }

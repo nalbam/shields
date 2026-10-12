@@ -1,23 +1,26 @@
-import queryString from 'query-string'
+import qs from 'qs'
 import { fetch } from '../../../core/base-service/got.js'
 import log from '../../../core/server/log.js'
 
 function setRoutes({ server, authHelper, onTokenAccepted }) {
-  const baseUrl = process.env.GATSBY_BASE_URL || 'https://img.shields.io'
+  const baseUrl = 'https://img.shields.io'
 
   server.route(/^\/github-auth$/, (data, match, end, ask) => {
     ask.res.statusCode = 302 // Found.
-    const query = queryString.stringify({
+    const query = qs.stringify({
       // TODO The `_user` property bypasses security checks in AuthHelper.
       // (e.g: enforceStrictSsl and shouldAuthenticateRequest).
       // Do not use it elsewhere. It would be better to clean this up so
       // it's not setting a bad example.
       client_id: authHelper._user,
       redirect_uri: `${baseUrl}/github-auth/done`,
+      // TODO: Request the OAuth scopes needed for scoped GitHub API features.
+      // Remove this TODO once this authorize URL includes a `scope` parameter.
+      // See https://github.com/badges/shields/issues/4169.
     })
     ask.res.setHeader(
       'Location',
-      `https://github.com/login/oauth/authorize?${query}`
+      `https://github.com/login/oauth/authorize?${query}`,
     )
     end('')
   })
@@ -53,15 +56,19 @@ function setRoutes({ server, authHelper, onTokenAccepted }) {
 
     let content
     try {
-      content = queryString.parse(resp.buffer)
+      content = qs.parse(resp.buffer)
     } catch (e) {
       return end('The GitHub OAuth token could not be parsed.')
     }
 
-    const { access_token: token } = content
+    const { access_token: token, scope = '' } = content
     if (!token) {
       return end('The GitHub OAuth process did not return a user token.')
     }
+    const scopes = scope
+      .split(',')
+      .map(scope => scope.trim())
+      .filter(Boolean)
 
     ask.res.setHeader('Content-Type', 'text/html')
     end(
@@ -73,10 +80,10 @@ function setRoutes({ server, authHelper, onTokenAccepted }) {
         'therefore more robust.</p>' +
         '<p>Thanks for contributing to a smoother experience for ' +
         'everyone!</p>' +
-        '<p><a href="/">Back to the website</a></p>'
+        '<p><a href="/">Back to the website</a></p>',
     )
 
-    onTokenAccepted(token)
+    onTokenAccepted(token, { scopes })
   })
 }
 

@@ -1,24 +1,31 @@
+import { pathParams } from '../index.js'
 import { renderDownloadsBadge } from '../downloads.js'
 import BaseGreasyForkService from './greasyfork-base.js'
 
 export default class GreasyForkInstalls extends BaseGreasyForkService {
   static category = 'downloads'
-  static route = { base: 'greasyfork', pattern: ':variant(dt|dd)/:scriptId' }
+  static route = { base: 'greasyfork', pattern: ':variant/:scriptId' }
+  static routeEnum = ['dt', 'dd']
 
-  static examples = [
-    {
-      title: 'Greasy Fork',
-      pattern: 'dd/:scriptId',
-      namedParams: { scriptId: '407466' },
-      staticPreview: renderDownloadsBadge({ downloads: 17, interval: 'day' }),
+  static openApi = {
+    '/greasyfork/{variant}/{scriptId}': {
+      get: {
+        summary: 'Greasy Fork Downloads',
+        parameters: pathParams(
+          {
+            name: 'variant',
+            example: 'dt',
+            description: 'total downloads or daily downloads',
+            schema: { type: 'string', enum: this.getEnum('variant') },
+          },
+          {
+            name: 'scriptId',
+            example: '406540',
+          },
+        ),
+      },
     },
-    {
-      title: 'Greasy Fork',
-      pattern: 'dt/:scriptId',
-      namedParams: { scriptId: '407466' },
-      staticPreview: renderDownloadsBadge({ downloads: 3420 }),
-    },
-  ]
+  }
 
   static defaultBadgeData = { label: 'installs' }
 

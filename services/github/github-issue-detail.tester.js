@@ -7,7 +7,7 @@ t.create('github issue state')
   .get('/issues/detail/state/badges/shields/979.json')
   .expectBadge({
     label: 'issue 979',
-    message: Joi.equal('open', 'closed'),
+    message: 'closed',
   })
 
 t.create('github issue state (repo not found)')
@@ -34,7 +34,7 @@ t.create('github issue label')
     label: 'label',
     message: Joi.equal(
       'bug | developer-experience',
-      'developer-experience | bug'
+      'developer-experience | bug',
     ),
   })
 
@@ -66,10 +66,10 @@ t.create('github pull request merge state (pull request not found)')
   })
 
 t.create('github issue milestone')
-  .get('/issues/detail/milestone/badges/shields/4949.json')
+  .get('/issues/detail/milestone/badges/shields/745.json')
   .expectBadge({
     label: 'milestone',
-    message: 'badge-maker v3.4',
+    message: 'Next Deploy',
   })
 
 t.create('github issue milestone (without milestone)')

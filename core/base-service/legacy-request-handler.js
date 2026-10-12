@@ -2,31 +2,7 @@ import makeBadge from '../../badge-maker/lib/make-badge.js'
 import { setCacheHeaders } from './cache-headers.js'
 import { makeSend } from './legacy-result-sender.js'
 import coalesceBadge from './coalesce-badge.js'
-
-// These query parameters are available to any badge. They are handled by
-// `coalesceBadge`.
-const globalQueryParams = new Set([
-  'label',
-  'style',
-  'link',
-  'logo',
-  'logoColor',
-  'logoPosition',
-  'logoWidth',
-  'link',
-  'colorA',
-  'colorB',
-  'color',
-  'labelColor',
-])
-
-function flattenQueryParams(queryParams) {
-  const union = new Set(globalQueryParams)
-  ;(queryParams || []).forEach(name => {
-    union.add(name)
-  })
-  return Array.from(union).sort()
-}
+import { flattenQueryParams, filterQueryParams } from './query-params.js'
 
 // handlerOptions can contain:
 // - handler: The service's request handler function
@@ -34,13 +10,6 @@ function flattenQueryParams(queryParams) {
 //   the service uses
 // - cacheLength: An optional badge or category-specific cache length
 //   (in number of seconds) to be used in preference to the default
-//
-// For safety, the service must declare the query parameters it wants to use.
-// Only the declared parameters (and the global parameters) are provided to
-// the service. Consequently, failure to declare a parameter results in the
-// parameter not working at all (which is undesirable, but easy to debug)
-// rather than indeterminate behavior that depends on the cache state
-// (undesirable and hard to debug).
 //
 // Pass just the handler function as shorthand.
 function handleRequest(cacheHeaderConfig, handlerOptions) {
@@ -65,7 +34,7 @@ function handleRequest(cacheHeaderConfig, handlerOptions) {
     */
     if (match[0] === '/endpoint' && Object.keys(queryParams).length === 0) {
       ask.res.statusCode = 301
-      ask.res.setHeader('Location', '/endpoint/')
+      ask.res.setHeader('Location', '/badges/endpoint-badge')
       ask.res.end()
       return
     }
@@ -73,11 +42,9 @@ function handleRequest(cacheHeaderConfig, handlerOptions) {
     // `defaultCacheLengthSeconds` can be overridden by
     // `serviceDefaultCacheLengthSeconds` (either by category or on a badge-
     // by-badge basis). Then in turn that can be overridden by
-    // `serviceOverrideCacheLengthSeconds` (which we expect to be used only in
-    // the dynamic badge) but only if `serviceOverrideCacheLengthSeconds` is
-    // longer than `serviceDefaultCacheLengthSeconds` and then the `cacheSeconds`
-    // query param can also override both of those but again only if `cacheSeconds`
-    // is longer.
+    // `serviceOverrideCacheLengthSeconds`.
+    // Then the `cacheSeconds` query param can also override both of those
+    // but only if `cacheSeconds` is longer.
     //
     // When the legacy services have been rewritten, all the code in here
     // will go away, which should achieve this goal in a simpler way.
@@ -93,10 +60,7 @@ function handleRequest(cacheHeaderConfig, handlerOptions) {
       })
     }
 
-    const filteredQueryParams = {}
-    allowedKeys.forEach(key => {
-      filteredQueryParams[key] = queryParams[key]
-    })
+    const filteredQueryParams = filterQueryParams(queryParams, allowedKeys)
 
     // In case our vendor servers are unresponsive.
     let serverUnresponsive = false
@@ -106,7 +70,7 @@ function handleRequest(cacheHeaderConfig, handlerOptions) {
       const badgeData = coalesceBadge(
         filteredQueryParams,
         { label: 'vendor', message: 'unresponsive' },
-        {}
+        {},
       )
       const svg = makeBadge(badgeData)
       const extension = (match.slice(-1)[0] || '.svg').replace(/^\./, '')
@@ -117,7 +81,6 @@ function handleRequest(cacheHeaderConfig, handlerOptions) {
     const result = handlerOptions.handler(
       filteredQueryParams,
       match,
-      // eslint-disable-next-line mocha/prefer-arrow-callback
       function sendBadge(format, badgeData) {
         if (serverUnresponsive) {
           return
@@ -128,9 +91,8 @@ function handleRequest(cacheHeaderConfig, handlerOptions) {
         const svg = makeBadge(badgeData)
         setCacheHeadersOnResponse(ask.res, badgeData.cacheLengthSeconds)
         makeSend(format, ask.res, end)(svg)
-      }
+      },
     )
-    // eslint-disable-next-line promise/prefer-await-to-then
     if (result && result.catch) {
       // eslint-disable-next-line promise/prefer-await-to-then
       result.catch(err => {

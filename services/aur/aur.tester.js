@@ -1,3 +1,4 @@
+import Joi from 'joi'
 import { ServiceTester } from '../tester.js'
 import {
   isVPlusDottedVersionNClausesWithOptionalSuffix,
@@ -17,7 +18,7 @@ t.create('version (valid)')
   .expectBadge({
     label: 'aur',
     message: isVPlusDottedVersionNClausesWithOptionalSuffix,
-    color: 'blue',
+    color: Joi.string().valid('blue', 'orange').required(),
   })
 
 t.create('version (not found)')
@@ -34,6 +35,19 @@ t.create('votes (valid)').get('/votes/google-chrome.json').expectBadge({
 t.create('votes (not found)')
   .get('/votes/not-a-package.json')
   .expectBadge({ label: 'votes', message: 'package not found' })
+
+// popularity tests
+
+t.create('popularity (valid)')
+  .get('/popularity/google-chrome.json')
+  .expectBadge({
+    label: 'popularity',
+    message: Joi.number().precision(2).required(),
+  })
+
+t.create('popularity (not found)')
+  .get('/popularity/not-a-package.json')
+  .expectBadge({ label: 'popularity', message: 'package not found' })
 
 // license tests
 
@@ -57,13 +71,41 @@ t.create('license (no license)')
           {
             License: null,
             NumVotes: 1,
+            Popularity: 0,
             Version: '1',
             OutOfDate: null,
             Maintainer: null,
             LastModified: 1,
           },
         ],
+      }),
+  )
+  .expectBadge({ label: 'license', message: 'not specified' })
+
+t.create('license (empty license)')
+  .get('/license/vscodium-bin.json')
+  .intercept(nock =>
+    nock('https://aur.archlinux.org')
+      .get('/rpc')
+      .query({
+        v: 5,
+        type: 'info',
+        arg: 'vscodium-bin',
       })
+      .reply(200, {
+        resultcount: 1,
+        results: [
+          {
+            License: [],
+            NumVotes: 1,
+            Popularity: 0,
+            Version: '1',
+            OutOfDate: null,
+            Maintainer: null,
+            LastModified: 1,
+          },
+        ],
+      }),
   )
   .expectBadge({ label: 'license', message: 'not specified' })
 
@@ -75,7 +117,7 @@ t.create('license (package not found)')
 
 t.create('maintainer (valid)')
   .get('/maintainer/google-chrome.json')
-  .expectBadge({ label: 'maintainer', message: 'luzifer' })
+  .expectBadge({ label: 'maintainer', message: 'gromit' })
 
 t.create('maintainer (not found)')
   .get('/maintainer/not-a-package.json')

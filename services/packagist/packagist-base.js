@@ -7,15 +7,14 @@ const packageSchema = Joi.array().items(
     version: Joi.string().required(),
     require: Joi.alternatives(
       Joi.object().pattern(Joi.string(), Joi.string()).required(),
-      Joi.string().valid('__unset')
+      Joi.string().valid('__unset'),
     ),
-  })
+  }),
 )
 
 const allVersionsSchema = Joi.object({
   packages: Joi.object().pattern(/^/, packageSchema).required(),
 }).required()
-const keywords = ['PHP']
 
 class BasePackagistService extends BaseJsonService {
   /**
@@ -33,7 +32,7 @@ class BasePackagistService extends BaseJsonService {
    * @param {string} attrs.server URL for the packagist registry server (Optional)
    * @returns {object} Parsed response
    */
-  async fetch({ user, repo, schema, server = 'https://packagist.org' }) {
+  async fetch({ user, repo, schema, server = 'https://repo.packagist.org' }) {
     const url = `${server}/p2/${user.toLowerCase()}/${repo.toLowerCase()}.json`
 
     return this._requestJson({
@@ -57,7 +56,12 @@ class BasePackagistService extends BaseJsonService {
    * @param {string} attrs.server URL for the packagist registry server (Optional)
    * @returns {object} Parsed response
    */
-  async fetchDev({ user, repo, schema, server = 'https://packagist.org' }) {
+  async fetchDev({
+    user,
+    repo,
+    schema,
+    server = 'https://repo.packagist.org',
+  }) {
     const url = `${server}/p2/${user.toLowerCase()}/${repo.toLowerCase()}~dev.json`
 
     return this._requestJson({
@@ -150,7 +154,7 @@ class BasePackagistService extends BaseJsonService {
       .filter(
         version =>
           typeof version.version === 'string' ||
-          version.version instanceof String
+          version.version instanceof String,
       )
       .map(version => version.version)
     if (versionStrings.length < 1) {
@@ -164,24 +168,25 @@ class BasePackagistService extends BaseJsonService {
     return versions.filter(version => version.version === release)[0]
   }
 }
+
+const description = `
+<a href="https://packagist.org/">Packagist</a> is a registry for PHP packages which can be installed with Composer.
+`
+
 const customServerDocumentationFragment = `
-    <p>
-        Note that only network-accessible packagist.org and other self-hosted Packagist instances are supported.
-    </p>
-    `
+Note that only network-accessible packagist.org and other self-hosted Packagist instances are supported.
+`
 
 const cacheDocumentationFragment = `
-  <p>
-      Displayed data may be slightly outdated.
-      Due to performance reasons, data fetched from packagist JSON API is cached for twelve hours on packagist infrastructure.
-      For more information please refer to <a target="_blank" href="https://packagist.org/apidoc#get-package-data">official packagist documentation</a>.
-  </p>
-  `
+Displayed data may be slightly outdated.
+Due to performance reasons, data fetched from packagist JSON API is cached for twelve hours on packagist infrastructure.
+For more information please refer to <a target="_blank" href="https://packagist.org/apidoc#get-package-data">official packagist documentation</a>.
+`
 
 export {
   allVersionsSchema,
-  keywords,
   BasePackagistService,
+  description,
   customServerDocumentationFragment,
   cacheDocumentationFragment,
 }

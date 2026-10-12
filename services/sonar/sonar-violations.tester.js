@@ -3,10 +3,10 @@ import { isMetric, withRegex } from '../test-validators.js'
 import { createServiceTester } from '../tester.js'
 export const t = await createServiceTester()
 const isViolationsLongFormMetric = Joi.alternatives(
-  Joi.allow(0),
+  Joi.equal(0),
   withRegex(
-    /(([\d]+) (blocker|critical|major|minor|info))(,\s([\d]+) (critical|major|minor|info))?/
-  )
+    /(([\d]+) (blocker|critical|major|minor|info))(,\s([\d]+) (critical|major|minor|info))?/,
+  ),
 )
 
 // The service tests targeting the legacy SonarQube API are mocked
@@ -33,7 +33,7 @@ t.create('Violations (branch)')
 
 t.create('Violations (legacy API supported)')
   .get(
-    '/violations/org.ow2.petals%3Apetals-se-ase.json?server=http://sonar.petalslink.com&sonarVersion=4.2'
+    '/violations/org.ow2.petals%3Apetals-se-ase.json?server=http://sonar.petalslink.com&sonarVersion=4.2',
   )
   .intercept(nock =>
     nock('http://sonar.petalslink.com/api')
@@ -53,7 +53,7 @@ t.create('Violations (legacy API supported)')
             },
           ],
         },
-      ])
+      ]),
   )
   .expectBadge({
     label: 'violations',
@@ -63,7 +63,7 @@ t.create('Violations (legacy API supported)')
 t.create('Violations Long Format')
   .timeout(10000)
   .get(
-    '/violations/brave_brave-core.json?server=https://sonarcloud.io&format=long'
+    '/violations/brave_brave-core.json?server=https://sonarcloud.io&format=long',
   )
   .expectBadge({
     label: 'violations',
@@ -72,7 +72,7 @@ t.create('Violations Long Format')
 
 t.create('Violations Long Format (legacy API supported)')
   .get(
-    '/violations/org.ow2.petals%3Apetals-se-ase.json?server=http://sonar.petalslink.com&sonarVersion=4.2&format=long'
+    '/violations/org.ow2.petals%3Apetals-se-ase.json?server=http://sonar.petalslink.com&sonarVersion=4.2&format=long',
   )
   .intercept(nock =>
     nock('http://sonar.petalslink.com/api')
@@ -113,7 +113,7 @@ t.create('Violations Long Format (legacy API supported)')
             },
           ],
         },
-      ])
+      ]),
   )
   .expectBadge({
     label: 'violations',
@@ -122,7 +122,7 @@ t.create('Violations Long Format (legacy API supported)')
 
 t.create('Blocker Violations')
   .timeout(10000)
-  .get('/blocker_violations/brave_brave-core.json?server=https://sonarcloud.io')
+  .get('/blocker_violations/apache_camel.json?server=https://sonarcloud.io')
   .expectBadge({
     label: 'blocker violations',
     message: isMetric,
@@ -130,7 +130,7 @@ t.create('Blocker Violations')
 
 t.create('Blocker Violations (legacy API supported)')
   .get(
-    '/blocker_violations/org.ow2.petals%3Apetals-se-ase.json?server=http://sonar.petalslink.com&sonarVersion=4.2'
+    '/blocker_violations/org.ow2.petals%3Apetals-se-ase.json?server=http://sonar.petalslink.com&sonarVersion=4.2',
   )
   .intercept(nock =>
     nock('http://sonar.petalslink.com/api')
@@ -150,7 +150,7 @@ t.create('Blocker Violations (legacy API supported)')
             },
           ],
         },
-      ])
+      ]),
   )
   .expectBadge({
     label: 'blocker violations',
@@ -160,7 +160,7 @@ t.create('Blocker Violations (legacy API supported)')
 t.create('Critical Violations')
   .timeout(10000)
   .get(
-    '/critical_violations/brave_brave-core.json?server=https://sonarcloud.io'
+    '/critical_violations/brave_brave-core.json?server=https://sonarcloud.io',
   )
   .expectBadge({
     label: 'critical violations',
@@ -169,7 +169,7 @@ t.create('Critical Violations')
 
 t.create('Critical Violations (legacy API supported)')
   .get(
-    '/critical_violations/org.ow2.petals%3Apetals-se-ase.json?server=http://sonar.petalslink.com&sonarVersion=4.2'
+    '/critical_violations/org.ow2.petals%3Apetals-se-ase.json?server=http://sonar.petalslink.com&sonarVersion=4.2',
   )
   .intercept(nock =>
     nock('http://sonar.petalslink.com/api')
@@ -189,7 +189,7 @@ t.create('Critical Violations (legacy API supported)')
             },
           ],
         },
-      ])
+      ]),
   )
   .expectBadge({
     label: 'critical violations',

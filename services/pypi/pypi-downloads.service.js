@@ -1,9 +1,8 @@
 import Joi from 'joi'
 import { nonNegativeInteger } from '../validators.js'
-import { BaseJsonService } from '../index.js'
+import { BaseJsonService, pathParam } from '../index.js'
 import { renderDownloadsBadge } from '../downloads.js'
-
-const keywords = ['python']
+import { pypiPackageParam } from './pypi-base.js'
 
 const schema = Joi.object({
   data: Joi.object({
@@ -35,23 +34,30 @@ export default class PypiDownloads extends BaseJsonService {
 
   static route = {
     base: 'pypi',
-    pattern: ':period(dd|dw|dm)/:packageName',
+    pattern: ':period/:packageName',
+  }
+  static routeEnum = ['dd', 'dw', 'dm']
+
+  static openApi = {
+    '/pypi/{period}/{packageName}': {
+      get: {
+        summary: 'PyPI Downloads',
+        description:
+          'Python package downloads from [pypistats](https://pypistats.org/)',
+        parameters: [
+          pathParam({
+            name: 'period',
+            example: 'dd',
+            schema: { type: 'string', enum: this.getEnum('period') },
+            description: 'Daily, Weekly, or Monthly downloads',
+          }),
+          pypiPackageParam,
+        ],
+      },
+    },
   }
 
-  static examples = [
-    {
-      title: 'PyPI - Downloads',
-      namedParams: {
-        period: 'dd',
-        packageName: 'Django',
-      },
-      staticPreview: renderDownloadsBadge({
-        interval: 'day',
-        downloads: 14000,
-      }),
-      keywords,
-    },
-  ]
+  static _cacheLength = 43200
 
   static defaultBadgeData = { label: 'downloads' }
 
@@ -59,7 +65,7 @@ export default class PypiDownloads extends BaseJsonService {
     return this._requestJson({
       url: `https://pypistats.org/api/packages/${packageName.toLowerCase()}/recent`,
       schema,
-      errorMessages: { 404: 'package not found' },
+      httpErrors: { 404: 'package not found' },
     })
   }
 

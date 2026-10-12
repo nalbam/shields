@@ -5,13 +5,13 @@ const isDependencyStatus = Joi.string().valid(
   'insecure',
   'latest',
   'recent',
-  'stale'
+  'stale',
 )
 
 export const t = new ServiceTester({ id: 'depfu', title: 'Depfu' })
 
 t.create('depfu Github dependencies (valid)')
-  .get('/dependencies/github/depfu/example-ruby.json')
+  .get('/dependencies/github/openSUSE/open-build-service.json')
   .expectBadge({
     label: 'dependencies',
     message: isDependencyStatus,
@@ -37,7 +37,7 @@ t.create('depfu Github dependencies (no separator)')
 
 t.create('depfu Gitlab dependencies (valid with subgroup)')
   .get(
-    '/dependencies/gitlab/shields-example-group/subgroup/example-nodejs.json'
+    '/dependencies/gitlab/shields-example-group/subgroup/example-nodejs.json',
   )
   .expectBadge({
     label: 'dependencies',

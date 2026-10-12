@@ -13,7 +13,7 @@ const optionalStringWhenNamedLogoPresent = Joi.alternatives().conditional(
   {
     is: Joi.string().required(),
     then: Joi.string(),
-  }
+  },
 )
 
 const optionalNumberWhenAnyLogoPresent = Joi.alternatives()
@@ -35,19 +35,23 @@ const endpointSchema = Joi.object({
   namedLogo: Joi.string(),
   logoSvg: Joi.string(),
   logoColor: optionalStringWhenNamedLogoPresent,
-  logoWidth: optionalNumberWhenAnyLogoPresent,
-  logoPosition: optionalNumberWhenAnyLogoPresent,
+  logoSize: optionalStringWhenNamedLogoPresent,
   style: Joi.string(),
   cacheSeconds: Joi.number().integer().min(0),
+  /*
+  Retained for legacy compatibility
+  Although this does nothing,
+  passing it should not throw an error
+  */
+  logoPosition: optionalNumberWhenAnyLogoPresent,
+  logoWidth: optionalNumberWhenAnyLogoPresent,
 })
   // `namedLogo` or `logoSvg`; not both.
   .oxor('namedLogo', 'logoSvg')
   .required()
 
 /**
- * Strictly validate the data according to the endpoint schema.
- * This rejects unknown/invalid keys.
- * Optionally it prints those keys in the message to provide detailed feedback.
+ * Validate the data according to the endpoint schema.
  *
  * @param {object} data Object containing the data for validation
  * @param {object} attrs Refer to individual attributes
@@ -58,7 +62,7 @@ const endpointSchema = Joi.object({
  */
 function validateEndpointData(
   data,
-  { prettyErrorMessage = 'invalid response data', includeKeys = false } = {}
+  { prettyErrorMessage = 'invalid response data', includeKeys = false } = {},
 ) {
   return validate(
     {
@@ -67,10 +71,9 @@ function validateEndpointData(
       includeKeys,
       traceErrorMessage: 'Response did not match schema',
       traceSuccessMessage: 'Response after validation',
-      allowAndStripUnknownKeys: false,
     },
     data,
-    endpointSchema
+    endpointSchema,
   )
 }
 
@@ -82,20 +85,21 @@ const anySchema = Joi.any()
  * @param {object} serviceInstance Instance of Endpoint class
  * @param {object} attrs Refer to individual attributes
  * @param {string} attrs.url Endpoint URL
- * @param {object} attrs.errorMessages Object containing error messages for different error codes
+ * @param {object} attrs.httpErrors Object containing error messages for different error codes
  * @param {string} attrs.validationPrettyErrorMessage If provided then the error message is set to this value
  * @param {boolean} attrs.includeKeys If true then includes error details in error message
  * @returns {object} Data fetched from endpoint
  */
 async function fetchEndpointData(
   serviceInstance,
-  { url, errorMessages, validationPrettyErrorMessage, includeKeys }
+  { url, httpErrors, validationPrettyErrorMessage, includeKeys },
 ) {
   const json = await serviceInstance._requestJson({
     schema: anySchema,
     url,
-    errorMessages,
-    options: { decompress: true },
+    httpErrors,
+    logErrors: [],
+    options: { decompress: true, timeout: { request: 3500 } },
   })
   return validateEndpointData(json, {
     prettyErrorMessage: validationPrettyErrorMessage,

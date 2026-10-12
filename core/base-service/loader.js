@@ -1,6 +1,6 @@
+import { globSync } from 'node:fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import glob from 'glob'
 import countBy from 'lodash.countby'
 import categories from '../../services/categories.js'
 import BaseService from './base.js'
@@ -10,13 +10,11 @@ const serviceDir = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
   '..',
   '..',
-  'services'
+  'services',
 )
 
 function toUnixPath(path) {
-  // glob does not allow \ as a path separator
-  // see https://github.com/isaacs/node-glob/blob/main/changelog.md#80
-  // so we need to convert to use / for use with glob
+  // Glob patterns use / as a path separator, including on Windows.
   return path.replace(/\\/g, '/')
 }
 
@@ -28,43 +26,7 @@ class InvalidService extends Error {
 }
 
 function getServicePaths(pattern) {
-  return glob.sync(toUnixPath(path.join(serviceDir, '**', pattern)))
-}
-
-async function loadServiceClasses(servicePaths) {
-  if (!servicePaths) {
-    servicePaths = getServicePaths('*.service.js')
-  }
-
-  const serviceClasses = []
-  for await (const servicePath of servicePaths) {
-    const currentServiceClasses = Object.values(
-      await import(`file://${servicePath}`)
-    ).flatMap(element =>
-      typeof element === 'object' ? Object.values(element) : element
-    )
-
-    if (currentServiceClasses.length === 0) {
-      throw new InvalidService(
-        `Expected ${servicePath} to export a service or a collection of services`
-      )
-    }
-    currentServiceClasses.forEach(serviceClass => {
-      if (serviceClass && serviceClass.prototype instanceof BaseService) {
-        // Decorate each service class with the directory that contains it.
-        serviceClass.serviceFamily = servicePath
-          .replace(toUnixPath(serviceDir), '')
-          .split('/')[1]
-        serviceClass.validateDefinition()
-        return serviceClasses.push(serviceClass)
-      }
-      throw new InvalidService(
-        `Expected ${servicePath} to export a service or a collection of services; one of them was ${serviceClass}`
-      )
-    })
-  }
-
-  return serviceClasses
+  return globSync(toUnixPath(path.join(serviceDir, '**', pattern))).sort()
 }
 
 function assertNamesUnique(names, { message }) {
@@ -79,14 +41,59 @@ function assertNamesUnique(names, { message }) {
   }
 }
 
-async function checkNames() {
-  const services = await loadServiceClasses()
+async function loadServiceClasses(servicePaths) {
+  if (!servicePaths) {
+    servicePaths = getServicePaths('*.service.js')
+  }
+
+  const serviceClasses = []
+  for await (const servicePath of servicePaths) {
+    const currentServiceClasses = Object.values(
+      await import(`file://${servicePath}`),
+    ).flatMap(element =>
+      typeof element === 'object' ? Object.values(element) : element,
+    )
+
+    if (currentServiceClasses.length === 0) {
+      throw new InvalidService(
+        `Expected ${servicePath} to export a service or a collection of services`,
+      )
+    }
+    currentServiceClasses.forEach(serviceClass => {
+      if (serviceClass && serviceClass.prototype instanceof BaseService) {
+        // Decorate each service class with the directory that contains it.
+        serviceClass.serviceFamily = servicePath
+          .replace(serviceDir, '')
+          .split(path.sep)[1]
+        serviceClass.validateDefinition()
+        return serviceClasses.push(serviceClass)
+      }
+      throw new InvalidService(
+        `Expected ${servicePath} to export a service or a collection of services; one of them was ${serviceClass}`,
+      )
+    })
+  }
+
   assertNamesUnique(
-    services.map(({ name }) => name),
+    serviceClasses.map(({ name }) => name),
     {
       message: 'Duplicate service names found',
-    }
+    },
   )
+
+  const routeSummaries = []
+  serviceClasses.forEach(function (serviceClass) {
+    if (serviceClass.openApi) {
+      for (const route of Object.values(serviceClass.openApi)) {
+        routeSummaries.push(route.get.summary)
+      }
+    }
+  })
+  assertNamesUnique(routeSummaries, {
+    message: 'Duplicate route summary found',
+  })
+
+  return serviceClasses
 }
 
 async function collectDefinitions() {
@@ -105,8 +112,8 @@ async function collectDefinitions() {
 async function loadTesters() {
   return Promise.all(
     getServicePaths('*.tester.js').map(
-      async path => await import(`file://${path}`)
-    )
+      async path => await import(`file://${path}`),
+    ),
   )
 }
 
@@ -114,7 +121,6 @@ export {
   InvalidService,
   loadServiceClasses,
   getServicePaths,
-  checkNames,
   collectDefinitions,
   loadTesters,
 }

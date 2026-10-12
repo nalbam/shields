@@ -4,7 +4,8 @@ import {
   optionalNonNegativeInteger,
 } from '../validators.js'
 import { floorCount as floorCountColor } from '../color-formatters.js'
-import { BaseJsonService, NotFound } from '../index.js'
+import { BaseService, NotFound, pathParams } from '../index.js'
+import { parseJson } from '../../core/base-service/json.js'
 
 const schema = Joi.object({
   scores: Joi.object({
@@ -17,26 +18,42 @@ const schema = Joi.object({
 
 // This service based on the REST API for clearlydefined.io
 // https://api.clearlydefined.io/api-docs/
-export default class ClearlyDefinedService extends BaseJsonService {
+export default class ClearlyDefinedService extends BaseService {
   static category = 'analysis'
   static route = {
-    base: 'clearlydefined',
-    pattern: 'score/:type/:provider/:namespace/:name/:revision',
+    base: 'clearlydefined/score',
+    pattern: ':type/:provider/:namespace/:name/:revision',
   }
 
-  static examples = [
-    {
-      title: 'ClearlyDefined Score',
-      namedParams: {
-        type: 'npm',
-        provider: 'npmjs',
-        namespace: '-',
-        name: 'jquery',
-        revision: '3.4.1',
+  static openApi = {
+    '/clearlydefined/score/{type}/{provider}/{namespace}/{name}/{revision}': {
+      get: {
+        summary: 'ClearlyDefined Score',
+        parameters: pathParams(
+          {
+            name: 'type',
+            example: 'npm',
+          },
+          {
+            name: 'provider',
+            example: 'npmjs',
+          },
+          {
+            name: 'namespace',
+            example: '-',
+          },
+          {
+            name: 'name',
+            example: 'jquery',
+          },
+          {
+            name: 'revision',
+            example: '3.4.1',
+          },
+        ),
       },
-      staticPreview: this.render({ score: 88 }),
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'score' }
 
@@ -50,13 +67,20 @@ export default class ClearlyDefinedService extends BaseJsonService {
   }
 
   async fetch({ type, provider, namespace, name, revision }) {
-    return this._requestJson({
-      schema,
+    const { buffer } = await this._request({
       url: `https://api.clearlydefined.io/definitions/${type}/${provider}/${namespace}/${name}/${revision}`,
-      errorMessages: {
-        500: 'unknown type, provider, or upstream issue',
-      },
+      options: { headers: { Accept: 'application/json' } },
     })
+    // If the type or provider is not found, the API returns a 200 response
+    // with an empty body. It cannot be parsed as JSON, we need to handle this
+    // case earlier than in the usual BaseJsonService._requestJson flow.
+    if (buffer.length === 0) {
+      throw new NotFound({
+        prettyMessage: 'unknown type, provider, or upstream issue',
+      })
+    }
+    const json = parseJson(buffer)
+    return this.constructor._validate(json, schema)
   }
 
   async handle({ type, provider, namespace, name, revision }) {
